@@ -1,6 +1,17 @@
 import numpy as np
 import math
 
+ROW_COUNT = 6
+COLUMN_COUNT = 7
+PLAYER = 0
+AI = 1
+
+EMPTY = 0
+PLAYER_PIECE = 1
+AI_PIECE = 2
+
+WINDOW_LENGTH = 4
+
 class Connect4Game:
     def __init__(self):
         self.board = self.create_board()
@@ -51,6 +62,60 @@ class Connect4Game:
 
     def print_board(self):
         print(np.flip(self.board, 0))
+        
+    def evaluate_window(self, piece):
+        score = 0
+        opp_piece = PLAYER_PIECE
+        if piece == PLAYER_PIECE:
+            opp_piece = AI_PIECE
+
+        if self.window.count(piece) == 4:
+            score += 100
+        elif self.window.count(piece) == 3 and self.window.count(EMPTY) == 1:
+            score += 5
+        elif self.window.count(piece) == 2 and self.window.count(EMPTY) == 2:
+            score += 2
+
+        if self.window.count(opp_piece) == 3 and self.window.count(EMPTY) == 1:
+            score -= 4
+
+        return score
+    
+    
+    def score_position(self, piece):
+        score = 0
+
+        ## Score center column
+        center_array = [int(i) for i in list(self.board[:, COLUMN_COUNT//2])]
+        center_count = center_array.count(piece)
+        score += center_count * 3
+
+        ## Score Horizontal
+        for r in range(ROW_COUNT):
+            row_array = [int(i) for i in list(self.board[r,:])]
+            for c in range(COLUMN_COUNT-3):
+                window = row_array[c:c+WINDOW_LENGTH]
+                score += self.evaluate_window(window, piece)
+
+        ## Score Vertical
+        for c in range(COLUMN_COUNT):
+            col_array = [int(i) for i in list(self.board[:,c])]
+            for r in range(ROW_COUNT-3):
+                window = col_array[r:r+WINDOW_LENGTH]
+                score += self.evaluate_window(window, piece)
+
+        ## Score posiive sloped diagonal
+        for r in range(ROW_COUNT-3):
+            for c in range(COLUMN_COUNT-3):
+                window = [self.board[r+i][c+i] for i in range(WINDOW_LENGTH)]
+                score += self.evaluate_window(window, piece)
+
+        for r in range(ROW_COUNT-3):
+            for c in range(COLUMN_COUNT-3):
+                window = [self.board[r+3-i][c+i] for i in range(WINDOW_LENGTH)]
+                score += self.evaluate_window(window, piece)
+
+        return score
 
     def play(self, col):
         if self.is_valid_location(col):

@@ -5,7 +5,6 @@ import sys
 import math
 from neuralNetwork import *
 from connect4 import *
-from evolutionaryAlgorithm import *
 
 BLUE = (0,0,255)
 BLACK = (0,0,0)
@@ -360,14 +359,14 @@ def play_game(NN):
                 if winning_move(board, PLAYER_PIECE):
                     # label = myfont.render("Player 1 wins!!", 1, RED)
                     # screen.blit(label, (40,10))
-                    print("player 1 wins")
-                    print_board(board)
+                    #print("player 1 wins")
+                    #print_board(board)
                     game_over = True
                     return 0
                 if 0 not in board:
                     # label = myfont.render("Draw", 1, BLUE)
-                    print("Draw")
-                    print_board(board)
+                    #print("Draw")
+                    #print_board(board)
                     # screen.blit(label, (40,10))
                     game_over = True
                     return 0
@@ -432,33 +431,28 @@ def play_game(NN):
 #     pygame.display.update
 
 
-
-
 # Define the NN architecture 
 input_size = 42  # 6 rows x 7 columns
-hidden_layers_sizes = [64, 32]  # Example hidden layers with 64 and 32 neurons
+hidden_layers_sizes = [64]  # Hidden layers with 64 and 32 neurons
 output_size = 1  # Single output neuron for the score
 
-# Define EA parameters
-population_size = 50
-num_games = 100
-num_generations = 10
+# # Define EA parameters
+# population_size = 50
+# num_games = 100
+# num_generations = 10
 
-population_weights = []
-population_fitness = []
+# population_weights = []
+# population_fitness = []
 
-for i in range(population_size):
-    weights, biases = initialise_weights(input_size, hidden_layers_sizes, output_size)
-    population_weights.append(weights)
-    nn = NeuralNetwork(input_size, hidden_layers_sizes, output_size, weights, biases)   
-    result = []
-    for j in range(num_games):
-        result.append(play_game(nn))
-    population_fitness.append(sum(result))
-    
-print(population_weights)
-print(population_fitness)
-    
+# for i in range(population_size):
+#     weights, biases = initialise_weights(input_size, hidden_layers_sizes, output_size)
+#     population_weights.append(weights)
+#     nn = NeuralNetwork(input_size, hidden_layers_sizes, output_size, weights, biases)   
+#     result = []
+#     for j in range(num_games):
+#         result.append(play_game(nn))
+#     population_fitness.append(sum(result))
+
 
 
 

@@ -20,11 +20,11 @@ def unflatten(flattened_list, original_weights):
 
 class Individual:
     def __init__(self, weights, biases, input_size, hidden_layers_sizes, output_size):
-        weights = weights
-        biases = biases
-        input_size = input_size
-        hidden_layers_sizes = hidden_layers_sizes
-        output_size = output_size
+        self.weights = weights
+        self.biases = biases
+        self.input_size = input_size
+        self.hidden_layers_sizes = hidden_layers_sizes
+        self.output_size = output_size
 
     def fitness(self):
         nn = NeuralNetwork(self.input_size, self.hidden_layers_sizes, self.output_size, self.weights, self.biases)
@@ -35,26 +35,26 @@ class Individual:
 
 class Population:
     def __init__(self, individuals):
-        super().__init__(individuals)
+        self.individuals = individuals
 
     def fitness_scores(self):
         return [individual.fitness() for individual in self.individuals]
 
     def crossover(self, parent1, parent2):
-        parent1 = flatten(parent1.weights)
-        parent2 = flatten(parent2.weights)
+        parent1_flatten = flatten(parent1.weights)
+        parent2_flatten = flatten(parent2.weights)
         # Child 1
-        point1, point2 = sorted(random.sample(range(1, len(parent1.solution)), 2))
+        point1, point2 = sorted(random.sample(range(1, len(parent1_flatten)), 2))
         child1 = []
-        child1_middle = parent2.solution[point1:point2]  # Middle part from parent2
+        child1_middle = parent2_flatten[point1:point2]  # Middle part from parent2
         remaining_num = []
-        for i in range(point2, len(parent1.solution)):
-            if parent1.solution[i] not in child1_middle:
-                remaining_num.append(parent1.solution[i])
+        for i in range(point2, len(parent1_flatten)):
+            if parent1_flatten[i] not in child1_middle:
+                remaining_num.append(parent1_flatten[i])
         for i in range(point2):
-            if parent1.solution[i] not in child1_middle:
-                remaining_num.append(parent1.solution[i])
-        for i in range(point2, len(parent1.solution)):
+            if parent1_flatten[i] not in child1_middle:
+                remaining_num.append(parent1_flatten[i])
+        for i in range(point2, len(parent1_flatten)):
             child1_middle.append(remaining_num.pop(0))
         
         for i in range(point1):
@@ -64,15 +64,15 @@ class Population:
         
         # Child 2
         child2 = []
-        child2_middle = parent1.solution[point1:point2]  # Middle part from parent1
+        child2_middle = parent1_flatten[point1:point2]  # Middle part from parent1
         remaining_num2 = []
-        for i in range(point2, len(parent2.solution)):
-            if parent2.solution[i] not in child2_middle:
-                remaining_num2.append(parent2.solution[i])
+        for i in range(point2, len(parent2_flatten)):
+            if parent2_flatten[i] not in child2_middle:
+                remaining_num2.append(parent2_flatten[i])
         for i in range(point2):
-            if parent2.solution[i] not in child2_middle:
-                remaining_num2.append(parent2.solution[i])
-        for i in range(point2, len(parent2.solution)):
+            if parent2_flatten[i] not in child2_middle:
+                remaining_num2.append(parent2_flatten[i])
+        for i in range(point2, len(parent2_flatten)):
             child2_middle.append(remaining_num2.pop(0))
         for i in range(point1):
             child2.append(remaining_num2.pop(0))
@@ -84,7 +84,7 @@ class Population:
     # Perform mutation
     def mutate(self, s):
         solution = flatten(s.weights)
-        mutated_solution = solution.solution[:]
+        mutated_solution = solution[:]
         random_index_1 = random.randint(0, len(mutated_solution)-1)
         random_index_2 = random.randint(0, len(mutated_solution)-1)
         while random_index_1 == random_index_2:
@@ -186,36 +186,40 @@ class EA:
 
     def initialize_population(self):
         individuals = []
-        for i in range(self.population_size):
+        for _ in range(self.population_size):
+            # print(input_size, hidden_layers_sizes, output_size)
             weights, biases = initialise_weights(input_size, hidden_layers_sizes, output_size)
+            # print(weights)
             individual = Individual(weights, biases, input_size, hidden_layers_sizes, output_size)
+            # print(individual)
             individuals.append(individual)
         return Population(individuals)
 
-    def run(self, tsp_data, pop):
+    def run(self, pop):
         best_fitness_values = []
         avg_fitness_values = []
         
         for generation in range(self.generations):
             fitness_scores = pop.fitness_scores()
-
+            print(fitness_scores)
             # Create offspring through crossover and mutation
             offspring = []
             for i in range(self.offsprings // 2):
-                parent1 = pop.individuals[self.random_selection(fitness_scores)]
-                parent2 = pop.individuals[self.random_selection(fitness_scores)]
+                parent1 = pop.individuals[self.fitness_proportional_selection_max(fitness_scores)]
+                parent2 = pop.individuals[self.fitness_proportional_selection_max(fitness_scores)]
+                # print(parent1)
                 child1, child2 = pop.crossover(parent1, parent2)
                 random_number_1 = random.random()
                 random_number_2 = random.random()
                 if random_number_1 > self.mutation_rate:
                     offspring.append(child1)
                 else:
-                    child1 = pop.mutate2(child1)
+                    child1 = pop.mutate(child1)
                     offspring.append(child1)
                 if random_number_2 > self.mutation_rate:
                     offspring.append(child2)
                 else:
-                    child2 = pop.mutate2(child2)
+                    child2 = pop.mutate(child2)
                     offspring.append(child2)
             
             if self.replacement:
@@ -247,19 +251,19 @@ class EA:
                             if r2 < 0.5:
                                 pop.individuals.append(i)
 
-            fitness_scores = pop.fitness_scores(tsp_data)
+            fitness_scores = pop.fitness_scores()
             
             temp_population = []
             for i in range(self.population_size):
-                x = self.truncation_selection_max(fitness_scores)
+                x = self.truncation_selection_min(fitness_scores)
                 y = pop.individuals[x]
                 pop.individuals.pop(x)
                 fitness_scores.pop(x)
                 temp_population.append(y)
             pop.individuals = temp_population
-            fitness_scores = pop.fitness_scores(tsp_data)
+            fitness_scores = pop.fitness_scores()
                 
-            best_solution = min(fitness_scores)
+            best_solution = max(fitness_scores)
             average_fitness = sum(fitness_scores) / len(fitness_scores)
             
             best_fitness_values.append(best_solution)
@@ -267,13 +271,13 @@ class EA:
             
             print("Generation", generation+1, ": Best:",best_solution, "Average:", average_fitness)
 
-        best_solution = min(fitness_scores)
+        best_solution = max(fitness_scores)
         return pop, pop.individuals[fitness_scores.index(best_solution)], best_solution, best_fitness_values, avg_fitness_values
     
 
 # run file
 POPULATION_SIZE = 50
-GENERATIONS = 20
+GENERATIONS = 10
 MUTATION_RATE = 0.5
 OFFSPRINGS = 20
 
@@ -287,29 +291,30 @@ best_solutions = []
 for iteration in range(1):
     # Initialize a new random population for each iteration
     population = ea.initialize_population()
+    # print(population.individuals[0].input_size)
     best_fitness_values = []
     average_fitness_values = []
     
-    population, best_individual, best_fit, best_fitness_values, average_fitness_values = ea.run(tsp_data, population)
-    best_solutions.append(best_individual)
-    avg_BSF = [x + y for x, y in zip(avg_BSF, best_fitness_values)]
-    avg_ASF = [x + y for x, y in zip(avg_ASF, average_fitness_values)]
-    print(f"Iteration: {iteration + 1}, Best Fitness: {best_fit}")
+    population, best_individual, best_fit, best_fitness_values, average_fitness_values = ea.run(population)
+    # best_solutions.append(best_individual)
+    # avg_BSF = [x + y for x, y in zip(avg_BSF, best_fitness_values)]
+    # avg_ASF = [x + y for x, y in zip(avg_ASF, average_fitness_values)]
+    # print(f"Iteration: {iteration + 1}, Best Fitness: {best_fit}")
 
 # Calculate average fitness over iterations
-avg_BSF = [x / 1 for x in avg_BSF]
-avg_ASF = [x / 1 for x in avg_ASF]
+# avg_BSF = [x / 1 for x in avg_BSF]
+# avg_ASF = [x / 1 for x in avg_ASF]
 
-# Plotting
-generations = range(1, len(best_fitness_values) + 1)
+# # Plotting
+# generations = range(1, len(best_fitness_values) + 1)
 
-plt.plot(generations, avg_BSF, label='Mean Best Fitness')
-plt.plot(generations, avg_ASF, label='Mean Average Fitness')
-plt.xlabel('Generations')
-plt.ylabel('Fitness')
-plt.title('Mean Best and Average Fitness over Iterations')
-plt.legend()
-plt.show()
+# plt.plot(generations, avg_BSF, label='Mean Best Fitness')
+# plt.plot(generations, avg_ASF, label='Mean Average Fitness')
+# plt.xlabel('Generations')
+# plt.ylabel('Fitness')
+# plt.title('Mean Best and Average Fitness over Iterations')
+# plt.legend()
+# plt.show()
 
 # halloffame_filename = "HallofFame.txt"
 # with open(halloffame_filename, 'a') as halloffame_file:

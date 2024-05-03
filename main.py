@@ -396,17 +396,17 @@ def play_game(NN):
 
                 if winning_move(board, AI_PIECE):
                     # label = myfont.render("Player 2 wins!!", 1, YELLOW)
-                    print("player 2 wins")
-                    print_board(board)
+                    # print("player 2 wins")
+                    # print_board(board)
                     # screen.blit(label, (40,10))
                     game_over = True
                     return 1
         
                 if 0 not in board:
                     # label = myfont.render("Draw", 1, BLUE)
-                    ("Draw")
+                    # ("Draw")
                     # screen.blit(label, (40,10))
-                    print_board(board)
+                    # print_board(board)
                     game_over = True
                     return 0
 
@@ -437,9 +437,9 @@ hidden_layers_sizes = [64]  # Hidden layers with 64 and 32 neurons
 output_size = 1  # Single output neuron for the score
 
 # # Define EA parameters
-# population_size = 50
-# num_games = 100
-# num_generations = 10
+population_size = 50
+num_games = 100
+num_generations = 10
 
 # population_weights = []
 # population_fitness = []

@@ -4,6 +4,8 @@ import pygame
 import math
 from neuralNetwork import *
 from finetuning import *
+import sys
+
 
 BLUE = (0,0,255)
 BLACK = (0,0,0)
@@ -22,9 +24,6 @@ AI_PIECE = 2
 
 WINDOW_LENGTH = 4
 
-# print_board(board)
-# game_over = False
-
 pygame.init()
 
 SQUARESIZE = 100
@@ -35,10 +34,6 @@ height = (ROW_COUNT+1) * SQUARESIZE
 size = (width, height)
 
 RADIUS = int(SQUARESIZE/2 - 5)
-
-# screen = pygame.display.set_mode(size)
-# draw_board(board)
-# pygame.display.update()
 
 myfont = pygame.font.SysFont("monospace", 75)
 
@@ -207,7 +202,6 @@ def minimax_with_NN(board, depth, alpha, beta, maximizingPlayer, NN):
             return (None, NN.forward_propagation(encoded_state))
 
     if maximizingPlayer:
-        # value = -math.inf
         column = None
         for col in valid_locations:
             row = get_next_open_row(board, col)
@@ -217,13 +211,11 @@ def minimax_with_NN(board, depth, alpha, beta, maximizingPlayer, NN):
             if new_score > alpha:
                 alpha = new_score
                 column = col
-            # alpha = max(alpha, value)
             if alpha >= beta:
                 break
         return column, alpha
 
     else: # Minimizing player
-        # value = math.inf
         column = None
         for col in valid_locations:
             row = get_next_open_row(board, col)
@@ -233,7 +225,6 @@ def minimax_with_NN(board, depth, alpha, beta, maximizingPlayer, NN):
             if new_score < beta:
                 beta = new_score
                 column = col
-            # beta = min(beta, value)
             if beta <= beta:
                 break
         return column, beta
@@ -293,34 +284,45 @@ def get_valid_locations(board):
             valid_locations.append(col)
     return valid_locations
 
-def pick_best_move(board, piece):
+# def pick_best_move(board, piece):
+#     valid_locations = get_valid_locations(board)
+#     best_score = -10000
+#     best_col = random.choice(valid_locations)
+#     for col in valid_locations:
+#         row = get_next_open_row(board, col)
+#         temp_board = board.copy()
+#         drop_piece(temp_board, row, col, piece)
+#         score = score_position(temp_board, piece)
+#         if score > best_score:
+#             best_score = score
+#             best_col = col
 
-    valid_locations = get_valid_locations(board)
-    best_score = -10000
-    best_col = random.choice(valid_locations)
-    for col in valid_locations:
-        row = get_next_open_row(board, col)
-        temp_board = board.copy()
-        drop_piece(temp_board, row, col, piece)
-        score = score_position(temp_board, piece)
-        if score > best_score:
-            best_score = score
-            best_col = col
+#     return best_col
 
-    return best_col
+def draw_board(board, screen):
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):
+            pygame.draw.rect(screen, BLUE, (c*SQUARESIZE, r*SQUARESIZE+SQUARESIZE, SQUARESIZE, SQUARESIZE))
+            pygame.draw.circle(screen, BLACK, (int(c*SQUARESIZE+SQUARESIZE/2), int(r*SQUARESIZE+SQUARESIZE+SQUARESIZE/2)), RADIUS)
+    
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):        
+            if board[r][c] == PLAYER_PIECE:
+                pygame.draw.circle(screen, RED, (int(c*SQUARESIZE+SQUARESIZE/2), height-int(r*SQUARESIZE+SQUARESIZE/2)), RADIUS)
+            elif board[r][c] == AI_PIECE: 
+                pygame.draw.circle(screen, YELLOW, (int(c*SQUARESIZE+SQUARESIZE/2), height-int(r*SQUARESIZE+SQUARESIZE/2)), RADIUS)
+    pygame.display.update()
 
 def initialise_weights(input_size, hidden_layers_sizes, output_size):
     layer_sizes = [input_size] + hidden_layers_sizes + [output_size]
     weights = []
     biases = []
-    # print(layer_sizes)
     # Initialize weights and biases for each layer
     for i in range(len(layer_sizes) - 1):
         weight_matrix = np.random.randn(layer_sizes[i], layer_sizes[i+1])
         bias_vector = np.zeros((1, layer_sizes[i+1]))
         weights.append(weight_matrix)
         biases.append(bias_vector)
-    # print(len(weights))
     return weights, biases
 
 def play_game(NN):
@@ -328,25 +330,7 @@ def play_game(NN):
     board = create_board()
     turn = random.randint(PLAYER, AI)
     while not game_over:
-
-        # for event in pygame.event.get():
-        #     if event.type == pygame.QUIT:
-        #         sys.exit()
-
-        # if event.type == pygame.MOUSEMOTION:
-        #     pygame.draw.rect(screen, BLACK, (0,0, width, SQUARESIZE))
-        #     posx = event.pos[0]
-        #     if turn == PLAYER:
-        #         pygame.draw.circle(screen, RED, (posx, int(SQUARESIZE/2)), RADIUS)
-
-        # pygame.display.update()
-
-        # if event.type == pygame.MOUSEBUTTONDOWN:
-            # pygame.draw.rect(screen, BLACK, (0,0, width, SQUARESIZE))
-            # print(event.pos)
-            # Ask for Player 1 Input
         if turn == PLAYER and not game_over:
-            # posx = event.pos[0]
             col = np.random.randint(0, COLUMN_COUNT)
             # col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
             # col = monte_carlo_ai_move(board)
@@ -356,75 +340,112 @@ def play_game(NN):
                 drop_piece(board, row, col, PLAYER_PIECE)
 
                 if winning_move(board, PLAYER_PIECE):
-                    # label = myfont.render("Player 1 wins!!", 1, RED)
-                    # screen.blit(label, (40,10))
-                    #print("player 1 wins")
-                    # print_board(board)
                     game_over = True
                     return 0
                 if 0 not in board:
-                    # label = myfont.render("Draw", 1, BLUE)
-                    #print("Draw")
-                    #print_board(board)
-                    # screen.blit(label, (40,10))
                     game_over = True
-                    return 0
+                    return 0.5
 
                 turn += 1
                 turn = turn % 2
 
-                # print_board(board)
-                # draw_board(board)
-
-
         # # Ask for Player 2 Input
         if turn == AI and not game_over:        
-            # col = ai_move(board)
-            # label = myfont.render("Monte Carlo", 1, RED)
-            # screen.blit(label, (40,10))
-            # col = monte_carlo_ai_move(board)
-            #col = random.randint(0, COLUMN_COUNT-1)
-            #col = pick_best_move(board, AI_PIECE)
             col, minimax_score = minimax_with_NN(board, 5, -math.inf, math.inf, True, NN)
             
 
             if is_valid_location(board, col):
-                #pygame.time.wait(500)
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, AI_PIECE)
 
                 if winning_move(board, AI_PIECE):
-                    # label = myfont.render("Player 2 wins!!", 1, YELLOW)
-                    # print("player 2 wins")
-                    # print_board(board)
-                    # screen.blit(label, (40,10))
                     game_over = True
                     return 1
         
                 if 0 not in board:
-                    # label = myfont.render("Draw", 1, BLUE)
-                    # ("Draw")
-                    # screen.blit(label, (40,10))
-                    # print_board(board)
                     game_over = True
-                    return 0
-
-                # print_board(board)
-                # draw_board(board)
+                    return 0.5
 
                 turn += 1
                 turn = turn % 2
 
-# def draw_board(bo()ard):
-#     for c in range(COLUMN_COUNT):
-#         for r in range(ROW_COUNT):
-#             pygame.draw.rect(screen, BLUE, (c*SQUARESIZE, r*SQUARESIZE+SQUARESIZE, SQUARESIZE, SQUARESIZE))
-#             pygame.draw.circle(screen, BLACK, (int(c*SQUARESIZE+SQUARESIZE/2), int(r*SQUARESIZE+SQUARESIZE+SQUARESIZE/2)), RADIUS)
-    
-#     for c in range(COLUMN_COUNT):
-#         for r in range(ROW_COUNT):        
-#             if board[r][c] == PLAYER_PIECE:
-#                 pygame.draw.circle(screen, RED, (int(c*SQUARESIZE+SQUARESIZE/2), height-int(r*SQUARESIZE+SQUARESIZE/2)), RADIUS)
-#             elif board[r][c] == AI_PIECE: 
-#                 pygame.draw.circle(screen, YELLOW, (int(c*SQUARESIZE+SQUARESIZE/2), height-int(r*SQUARESIZE+SQUARESIZE/2)), RADIUS)
-#     pygame.display.update
+def play_game_gui(NN):
+    screen = pygame.display.set_mode(size)
+    game_over=False
+    board = create_board()
+    draw_board(board, screen)
+    pygame.display.update()
+
+    myfont = pygame.font.SysFont("monospace", 75)
+    turn = random.randint(PLAYER, AI)
+    result = 0
+    while not game_over:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+
+        pygame.display.update()
+        
+        if turn == PLAYER and not game_over:
+            col = np.random.randint(0, COLUMN_COUNT)
+
+            if is_valid_location(board, col):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, PLAYER_PIECE)
+
+                if winning_move(board, PLAYER_PIECE):
+                    label = myfont.render("Player 1 wins!!", 1, RED)
+                    screen.blit(label, (40,10))
+                    print("player 1 wins")
+                    game_over = True
+                    # pygame.time.wait(3000)
+                    result = 0
+                if 0 not in board:
+                    label = myfont.render("Draw", 1, BLUE)
+                    print("Draw")
+                    # print_board(board)
+                    screen.blit(label, (40,10))
+                    game_over = True
+                    # pygame.time.wait(3000)
+                    result = 0.5
+
+                turn += 1
+                turn = turn % 2
+
+                draw_board(board, screen)
+
+
+        # # Ask for Player 2 Input
+        if turn == AI and not game_over:        
+            col, _ = minimax_with_NN(board, 10, -math.inf, math.inf, True, NN)
+            
+
+            if is_valid_location(board, col):
+                row = get_next_open_row(board, col)
+                drop_piece(board, row, col, AI_PIECE)
+
+                if winning_move(board, AI_PIECE):
+                    label = myfont.render("Player 2 wins!!", 1, YELLOW)
+                    screen.blit(label, (40,10))
+                    game_over = True
+                    # pygame.time.wait(3000)
+                    result = 1
+        
+                if 0 not in board:
+                    label = myfont.render("Draw", 1, BLUE)
+                    screen.blit(label, (40,10))
+                    game_over = True
+                    # pygame.time.wait(3000)
+                    result = 0.5
+
+                draw_board(board,screen)
+
+                turn += 1
+                turn = turn % 2
+
+        if game_over:
+            print_board(board)
+            # draw_board(board, screen)
+            pygame.time.wait(3000)
+            return result

@@ -8,22 +8,18 @@ class NeuralNetwork:
         self.weights = weights
         self.biases = biases
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-
     def forward_propagation(self, x):
         activations = [x]
         # Forward propagation through hidden layers
         for i in range(len(self.weights) - 1):
             z = np.dot(activations[-1], self.weights[i]) + self.biases[i]
-            a = self.sigmoid(z)
-            activations.append(a)
+            activation = np.tanh(z)
+            activations.append(activation)
 
         # Output layer
         z = np.dot(activations[-1], self.weights[-1]) + self.biases[-1]
         output = z  # No activation function for output layer
         activations.append(output)
-
         return output
 
     def encode_game_state(self, board):

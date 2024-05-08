@@ -125,10 +125,14 @@ class EA:
         return min_index
 
     def fitness_proportional_selection_max(self, fitness_scores):
+        # print(fitness_scores)
         total_fitness = sum(fitness_scores)
-        probabilities = [fitness / total_fitness for fitness in fitness_scores]
-        selected_index = random.choices(range(len(fitness_scores)), weights=probabilities)
-        return selected_index[0]
+        if total_fitness!=0:
+            probabilities = [fitness / total_fitness for fitness in fitness_scores]
+            selected_index = random.choices(range(len(fitness_scores)), weights=probabilities)
+            return selected_index[0]
+        else:
+            return self.random_selection(fitness_scores)
 
     def fitness_proportional_selection_min(self, fitness_scores):
         inverted_fitness_scores = [1 / fitness for fitness in fitness_scores]
@@ -252,7 +256,7 @@ class EA:
                                 pop.individuals.append(i)
 
             fitness_scores = pop.fitness_scores()
-            
+            len(fitness_scores)
             temp_population = []
             for i in range(self.population_size):
                 x = self.truncation_selection_max(fitness_scores)

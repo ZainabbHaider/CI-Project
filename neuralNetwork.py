@@ -22,101 +22,82 @@ class NeuralNetwork:
         activations.append(output)
         return output
 
-    # def encode_game_state(self, board):
-    #     # Flatten the board into a 1D array
-    #     return np.array(board).flatten()
+    def encode_game_state_c42(self, board):
+        return np.array(board).flatten()
+    
+    def encode_game_state_c138(self, board):
+        encoded_board = np.array(board).flatten()
+        def check_nearly_completed_rows(player):
+            count = 0
+            for row in range(6):
+                for col in range(7):
+                    # Horizontal nearly completed rows
+                    if col <= 3 and np.sum(board[row, col:col+4] == player) == 3 and board[row, col+3] == 0:
+                        count += 1
+                    # Vertical nearly completed rows
+                    if row <= 2 and np.sum(board[row:row+4, col] == player) == 3 and board[row+3, col] == 0:
+                        count += 1
+                    # Diagonal nearly completed rows (top-left to bottom-right)
+                    if row <= 2 and col <= 3 and np.sum(np.diagonal(board[row:row+4, col:col+4]) == player) == 3 and board[row+3, col+3] == 0:
+                        count += 1
+                    # Diagonal nearly completed rows (bottom-left to top-right)
+                    if row >= 3 and col <= 3 and np.sum(np.diagonal(np.flipud(board[row-3:row+1, col:col+4])) == player) == 3 and board[row-3, col+3] == 0:
+                        count += 1
+            return count
 
-    def encode_game_state(self, board):
-        # Initialize the encoded game state array
-        encoded_state = []
+        def check_rows_of_two(player):
+            count = 0
+            for row in range(6):
+                for col in range(7):
+                    # Horizontal rows of two
+                    if col <= 5 and np.sum(board[row, col:col+2] == player) == 2 and np.all(board[row, col:col+2] != 3-player):
+                        count += 1
+                    # Vertical rows of two
+                    if row <= 4 and np.sum(board[row:row+2, col] == player) == 2 and np.all(board[row:row+2, col] != 3-player):
+                        count += 1
+                    # Diagonal rows of two (top-left to bottom-right)
+                    if row <= 4 and col <= 5 and np.sum(np.diagonal(board[row:row+2, col:col+2]) == player) == 2 and np.all(np.diagonal(board[row:row+2, col:col+2]) != 3-player):
+                        count += 1
+                    # Diagonal rows of two (bottom-left to top-right)
+                    if row >= 1 and col <= 5 and np.sum(np.diagonal(np.flipud(board[row-1:row+1, col:col+2])) == player) == 2 and np.all(np.diagonal(np.flipud(board[row-1:row+1, col:col+2])) != 3-player):
+                        count += 1
+            return count
+        
+        for player in [1, 2]:
+            nearly_completed_rows_count = check_nearly_completed_rows(player)
+            rows_of_two_count = check_rows_of_two(player)
+            encoded_board = np.append(encoded_board, nearly_completed_rows_count)
+            encoded_board = np.append(encoded_board, rows_of_two_count)
+            
+            # Count nearly completed rows of four discs in each column
+            for col in range(7):
+                col_slice = board[:, col]
+                if np.sum(col_slice == player) == 3 and np.any(col_slice == 0):
+                    encoded_board = np.append(encoded_board, 1)
+                else:
+                    encoded_board = np.append(encoded_board, 0)
 
-        # Define players' colors
-        player_colors = [1, 2]  # Assuming player 1 is represented by 1 and player 2 by 2
+            # Count empty fields in horizontal rows
+            for row in range(6):
+                if np.sum(board[row] == player) == 3 and np.any(board[row] == 0):
+                    encoded_board = np.append(encoded_board, 1)
+                else:
+                    encoded_board = np.append(encoded_board, 0)
 
-        for player_color in player_colors:
-            # Calculate nearly completed rows of four discs
-            for row in range(board.shape[0]):
-                for col in range(board.shape[1] - 3):
-                    row_values = board[row, col:col+4]
-                    if np.count_nonzero(row_values == player_color) == 3 and 0 in row_values:
-                        # Nearly completed row of four discs found
-                        encoded_state.append(1)
+            # Count empty fields in diagonal rows
+            for offset in range(-2, 4):
+                diag_slice = np.diagonal(board, offset)
+                for i in range(len(diag_slice) - 3):
+                    if np.sum(diag_slice[i:i+4] == player) == 3 and np.any(diag_slice[i:i+4] == 0):
+                        encoded_board = np.append(encoded_board, 1)
                     else:
-                        encoded_state.append(0)
+                        encoded_board = np.append(encoded_board, 0)
 
-            # Calculate nearly completed rows of two discs (vertical and diagonal)
-            for row in range(board.shape[0] - 3):
-                for col in range(board.shape[1]):
-                    # Vertical
-                    if np.count_nonzero(board[row:row+2, col] == player_color) == 1 and \
-                            0 in board[row:row+2, col]:
-                        encoded_state.append(1)
+            # Count empty fields in vertical rows
+            for col in range(7):
+                for row in range(3):
+                    if np.sum(board[row:row+4, col] == player) == 3 and np.any(board[row:row+4, col] == 0):
+                        encoded_board = np.append(encoded_board, 1)
                     else:
-                        encoded_state.append(0)
-
-                    # Diagonal (down-right)
-                    if col <= board.shape[1] - 4:
-                        diagonal_values = [board[row+i, col+i] for i in range(4)]
-                        if np.count_nonzero(diagonal_values == player_color) == 3 and 0 in diagonal_values:
-                            encoded_state.append(1)
-                        else:
-                            encoded_state.append(0)
-
-                    # Diagonal (down-left)
-                    if col >= 3:
-                        diagonal_values = [board[row+i, col-i] for i in range(4)]
-                        if np.count_nonzero(diagonal_values == player_color) == 3 and 0 in diagonal_values:
-                            encoded_state.append(1)
-                        else:
-                            encoded_state.append(0)
-
-            # Calculate height of nearly completed rows of four discs
-            for row in range(board.shape[0]):
-                for col in range(board.shape[1] - 3):
-                    row_values = board[row, col:col+4]
-                    if np.count_nonzero(row_values == player_color) == 3 and 0 in row_values:
-                        height = np.where(row_values == 0)[0][0]
-                        encoded_state.append(height)
-                    else:
-                        encoded_state.append(0)
-
-            # Calculate height of nearly completed rows of two discs (vertical and diagonal)
-            for row in range(board.shape[0] - 3):
-                for col in range(board.shape[1]):
-                    # Vertical
-                    if np.count_nonzero(board[row:row+2, col] == player_color) == 1 and \
-                            0 in board[row:row+2, col]:
-                        height = np.where(board[row:row+2, col] == 0)[0][0]
-                        encoded_state.append(height)
-                    else:
-                        encoded_state.append(0)
-
-                    # Diagonal (down-right)
-                    if col <= board.shape[1] - 4:
-                        diagonal_values = [board[row+i, col+i] for i in range(4)]
-                        if np.count_nonzero(diagonal_values == player_color) == 3 and 0 in diagonal_values:
-                            height = np.where(np.array(diagonal_values) == 0)[0][0]
-                            encoded_state.append(height)
-                        else:
-                            encoded_state.append(0)
-
-                    # Diagonal (down-left)
-                    if col >= 3:
-                        diagonal_values = [board[row+i, col-i] for i in range(4)]
-                        if np.count_nonzero(diagonal_values == player_color) == 3 and 0 in diagonal_values:
-                            height = np.where(np.array(diagonal_values) == 0)[0][0]
-                            encoded_state.append(height)
-                        else:
-                            encoded_state.append(0)
-
-        # Count total number of nearly completed rows of each player's color
-        for player_color in player_colors:
-            total_rows = 0
-            for i in range(len(encoded_state)):
-                if encoded_state[i] == 1 and encoded_state[i + len(player_colors * 21)] == player_color:
-                    total_rows += 1
-            encoded_state.append(total_rows)
-
-        # Convert the encoded state into a 1D numpy array
-        # print(np.concatenate((np.array(encoded_state), np.array(board).flatten())))
-        return np.concatenate((np.array(encoded_state), np.array(board).flatten()))
+                        encoded_board = np.append(encoded_board, 0)
+        return encoded_board

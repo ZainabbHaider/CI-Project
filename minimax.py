@@ -198,7 +198,7 @@ def minimax_with_NN(board, depth, alpha, beta, maximizingPlayer, NN):
             else: # Game is over, no more valid moves
                 return (None, 0)
         else: # Depth is zero
-            encoded_state = NN.encode_game_state(board)
+            encoded_state = NN.encode_game_state_c138(board)
             return (None, NN.forward_propagation(encoded_state))
 
     if maximizingPlayer:
@@ -299,6 +299,16 @@ def get_valid_locations(board):
 
 #     return best_col
 
+def simple_heuristic(board, piece):
+    # print("in here")
+    for col in range(COLUMN_COUNT):
+        for row in range(ROW_COUNT-1, -1, -1):
+            if board[row][col] == piece and is_valid_location(board, col):
+                # print(board)
+                # print("in here")
+                return col
+    return np.random.randint(0, COLUMN_COUNT)
+
 def draw_board(board, screen):
     for c in range(COLUMN_COUNT):
         for r in range(ROW_COUNT):
@@ -331,10 +341,11 @@ def play_game(NN):
     turn = random.randint(PLAYER, AI)
     while not game_over:
         if turn == PLAYER and not game_over:
-            col = np.random.randint(0, COLUMN_COUNT)
+            # col = np.random.randint(0, COLUMN_COUNT)
             # col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
             # col = monte_carlo_ai_move(board)
-
+            col = simple_heuristic(board, PLAYER_PIECE)
+            # print(col)
             if is_valid_location(board, col):
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, PLAYER_PIECE)
@@ -352,6 +363,7 @@ def play_game(NN):
         # # Ask for Player 2 Input
         if turn == AI and not game_over:        
             col, minimax_score = minimax_with_NN(board, 5, -math.inf, math.inf, True, NN)
+            # score, col = NN.forward_propagation(board)
             
 
             if is_valid_location(board, col):
@@ -378,6 +390,7 @@ def play_game_gui(NN):
 
     myfont = pygame.font.SysFont("monospace", 75)
     turn = random.randint(PLAYER, AI)
+    
     result = 0
     while not game_over:
 
@@ -388,8 +401,9 @@ def play_game_gui(NN):
         pygame.display.update()
         
         if turn == PLAYER and not game_over:
-            col = np.random.randint(0, COLUMN_COUNT)
-
+            # col = np.random.randint(0, COLUMN_COUNT)
+            col = simple_heuristic(board, PLAYER_PIECE)
+            print(col)
             if is_valid_location(board, col):
                 row = get_next_open_row(board, col)
                 drop_piece(board, row, col, PLAYER_PIECE)
@@ -414,6 +428,7 @@ def play_game_gui(NN):
                 turn = turn % 2
 
                 draw_board(board, screen)
+                pygame.time.wait(3000)
 
 
         # # Ask for Player 2 Input
@@ -440,6 +455,7 @@ def play_game_gui(NN):
                     result = 0.5
 
                 draw_board(board,screen)
+                pygame.time.wait(3000)
 
                 turn += 1
                 turn = turn % 2
@@ -449,3 +465,7 @@ def play_game_gui(NN):
             # draw_board(board, screen)
             pygame.time.wait(3000)
             return result
+
+# weights, biases = initialise_weights(INPUT_SIZE, HIDDEN_LAYERS_SIZES, OUTPUT_SIZE)
+# nn = NeuralNetwork(INPUT_SIZE, HIDDEN_LAYERS_SIZES, OUTPUT_SIZE, weights, biases)
+# play_game_gui(nn)
